@@ -1,0 +1,5 @@
+prefixes:
+  icm20948: ..
+packages:
+  ..:
+    path: ..
