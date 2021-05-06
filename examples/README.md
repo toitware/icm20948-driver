@@ -5,7 +5,8 @@ package it is included in. If you want to run this example outside the
 package directory do the following:
 
 * Copy the `accel_gyro.toit` file into a folder of your choice.
-* In this folder run `toit pkg init --app`.
+* Optionally run `toit pkg init --app` in this folder. This sets the root of
+  the program with an empty `package.lock` file.
 * Synchronize the registry: `toit pkg sync`.
 * Install the package: `toit pkg install icm20948`.
 
