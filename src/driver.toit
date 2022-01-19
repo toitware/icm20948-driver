@@ -1,8 +1,8 @@
 // Copyright (C) 2021 Toitware ApS. All rights reserved.
 
 import binary
-import serial.device
-import serial.registers
+import serial.device show Device
+import serial.registers show Registers
 import math
 
 I2C_ADDRESS     ::= 0b1101000
@@ -56,9 +56,9 @@ class Driver:
   accel_sensitivity_/float := 0.0
   gyro_sensitivity_/float := 0.0
 
-  reg_/serial.Registers
+  reg_/Registers
 
-  constructor dev/serial.Device:
+  constructor dev/Device:
     reg_ = dev.registers
 
   on:
