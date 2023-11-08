@@ -7,7 +7,7 @@ A simple example of how to use the ICM20948 driver.
 */
 
 import gpio
-import serial.protocols.i2c as i2c
+import i2c
 import icm20948
 
 main:
