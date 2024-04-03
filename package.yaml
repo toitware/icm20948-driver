@@ -1,2 +1,4 @@
 name: icm20948
 description: Driver for ICM-20948 9-axis devices.
+environment:
+  sdk: ^v2.0.0-alpha.144

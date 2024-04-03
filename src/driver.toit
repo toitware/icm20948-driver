@@ -1,6 +1,6 @@
 // Copyright (C) 2021 Toitware ApS. All rights reserved.
 
-import binary
+import io
 import serial.device show Device
 import serial.registers show Registers
 import math
@@ -113,9 +113,9 @@ class Driver:
 
   read_point_ reg/int sensitivity/float -> math.Point3f:
     bytes := reg_.read_bytes reg 6
-    x := binary.BIG_ENDIAN.int16 bytes 0
-    y := binary.BIG_ENDIAN.int16 bytes 2
-    z := binary.BIG_ENDIAN.int16 bytes 4
+    x := io.BIG_ENDIAN.int16 bytes 0
+    y := io.BIG_ENDIAN.int16 bytes 2
+    z := io.BIG_ENDIAN.int16 bytes 4
     return math.Point3f
       x / sensitivity
       y / sensitivity
