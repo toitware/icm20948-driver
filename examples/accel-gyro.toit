@@ -15,15 +15,15 @@ main:
     --sda=gpio.Pin 21
     --scl=gpio.Pin 22
 
-  device := bus.device icm20948.I2C_ADDRESS_ALT
+  device := bus.device icm20948.I2C-ADDRESS-ALT
 
   sensor := icm20948.Driver device
 
   sensor.on
-  sensor.configure_accel
-  sensor.configure_gyro
+  sensor.configure-accel
+  sensor.configure-gyro
   while true:
-    print "Acceleration: $sensor.read_accel"
-    print "Gyroscope: $sensor.read_gyro"
+    print "Acceleration: $sensor.read-accel"
+    print "Gyroscope: $sensor.read-gyro"
     sleep --ms=1000
   sensor.off
