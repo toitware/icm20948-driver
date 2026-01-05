@@ -4,6 +4,7 @@ import io
 import serial.device show Device
 import serial.registers show Registers
 import math
+import log
 
 I2C-ADDRESS     ::= 0b1101000
 I2C-ADDRESS-ALT ::= 0b1101001
@@ -29,9 +30,11 @@ class Driver:
 
   // Bank 0
   static REGISTER-WHO-AM-I_       ::= 0x00
+  static REGISTER-USER-CTRL_      ::= 0x03
   static REGISTER-LP-CONFIG_      ::= 0x05
   static REGISTER-PWR-MGMT-1_     ::= 0x06
   static REGISTER-PWR-MGMT-2_     ::= 0x07
+  static REGISTER-INT-PIN-CFG_    ::= 0x0F
   static REGISTER-INT-STATUS-1_   ::= 0x1A
   static REGISTER-ACCEL-XOUT-H_   ::= 0x2D
   static REGISTER-ACCEL-XOUT-L_   ::= 0x2E
@@ -53,13 +56,113 @@ class Driver:
   static REGISTER-ACCEL-CONFIG_     ::= 0x14
   static REGISTER-ACCEL-CONFIG-2_   ::= 0x15
 
+  // Bank 3 - I2C Master Engine.
+  static REGISTER-I2C-MST-ODR-CONFIG_ ::= 0x00
+  static REGISTER-I2C-MST-CTRL_       ::= 0x01
+  static REGISTER-I2C-MST-DELAY-CTRL_ ::= 0x02
+
+  static REGISTER-I2C-SLV0-ADDR_      ::= 0x03  // R/W and PHY address of I2C Slave x.
+  static REGISTER-I2C-SLV0-REG_       ::= 0x04  // I2C slave x register address from where to begin data transfer.
+  static REGISTER-I2C-SLV0-CTRL_      ::= 0x05  //
+  static REGISTER-I2C-SLV0-DO_        ::= 0x06  // Data out when slave x is set to write.
+
+  static REGISTER-I2C-SLV1-ADDR_      ::= 0x07
+  static REGISTER-I2C-SLV1-REG_       ::= 0x08
+  static REGISTER-I2C-SLV1-CTRL_      ::= 0x09
+  static REGISTER-I2C-SLV1-DO_        ::= 0x0A
+
+  static REGISTER-I2C-SLV2-ADDR_      ::= 0x0B
+  static REGISTER-I2C-SLV2-REG_       ::= 0x0C
+  static REGISTER-I2C-SLV2-CTRL_      ::= 0x0D
+  static REGISTER-I2C-SLV2-DO_        ::= 0x0E
+
+  static REGISTER-I2C-SLV3-ADDR_      ::= 0x0F
+  static REGISTER-I2C-SLV3-REG_       ::= 0x10
+  static REGISTER-I2C-SLV3-CTRL_      ::= 0x11
+  static REGISTER-I2C-SLV3-DO_        ::= 0x12
+
+  static REGISTER-I2C-SLV4-ADDR_      ::= 0x13
+  static REGISTER-I2C-SLV4-REG_       ::= 0x14
+  static REGISTER-I2C-SLV4-CTRL_      ::= 0x15
+  static REGISTER-I2C-SLV4-DO_        ::= 0x16  // Data OUT when slave 4 is set to write.
+  static REGISTER-I2C-SLV4-DI_        ::= 0x17  // Data IN when slave 4.
+
+  // Masks: $REGISTER-USER-CTRL_
+  static USER-CTRL-DMP-EN_      ::= 0b10000000
+  static USER-CTRL-FIFO-EN_     ::= 0b01000000
+  static USER-CTRL-I2C-MST-EN_  ::= 0b00100000
+  static USER-CTRL-I2C-IF-DIS_  ::= 0b00010000  // Reset I2C Slave module and put the serial interface in SPI mode only.
+  static USER-CTRL-DMP-RST_     ::= 0b00001000  // Reset DMP. Asynchronous. Takes 1 clock cycle of 20 Mhz clock.
+  static USER-CTRL-SRAM-RST_    ::= 0b00000100  // Reset SRAM. Asynchronous. Takes 1 clock cycle of 20 Mhz clock.
+  static USER-CTRL-I2C-MST-RST_ ::= 0b00000010  // Reset I2C. Asynchronous. Takes 1 clock cycle of 20 Mhz clock. Could cause I2C slave to hang. See datasheet.
+
+  // Masks: $REGISTER-INT-PIN-CFG_
+  static INT-PIN-CFG-INT1-ACTL_             ::= 0b10000000
+  static INT-PIN-CFG-INT1-OPEN_             ::= 0b01000000
+  static INT-PIN-CFG-INT1-LATCH-EN_         ::= 0b00100000
+  static INT-PIN-CFG-INT-INT-ANYRD-2CLEAR_  ::= 0b00010000
+  static INT-PIN-CFG-ACTL-FSYNC_            ::= 0b00001000
+  static INT-PIN-CFG-FSYNC-INT-MODE-EN_     ::= 0b00000100
+  static INT-PIN-CFG-BYPASS-EN_             ::= 0b00000010
+
+  // Masks: $REGISTER-I2C-MST-CTRL_
+  static I2C-MULT-MST-EN_ ::= 0b10000000
+  static I2C-MST-P-NSR_   ::= 0b00010000
+  static I2C-MST-CLK_     ::= 0b00001111 // To use 400 kHz, MAX, it is recommended to set I2C-MST-CLK_ to 7.
+
+  // Masks: REGISTER-I2C-SLVx-ADDR_ [x=0..4]
+  static I2C-SLVx-ADDR-RW_     ::= 0b10000000  // Transfer is R or W for slave x
+  static I2C-SLVx-ADDR-I2C-ID_ ::= 0b01111111  // PHY address of I2C slave x
+
+  // Masks: REGISTER-I2C-SLVx-CTRL_ [x=0..4]
+  static I2C-SLVx-CTRL-EN_      ::= 0b10000000  // Enable reading data from this slave at the sample rate and storing data at the first available EXT_SENS_DATA register, which is always EXT_SENS_DATA_00 for I 2C slave 0
+  static I2C-SLVx-CTRL-BYTE-SW_ ::= 0b01000000  // 1 – Swap bytes when reading both the low and high byte of a word.
+  static I2C-SLVx-CTRL-REG-DIS_ ::= 0b00100000  // Disables writing the register value - when set it will only read/write data.
+  static I2C-SLVx-CTRL-GRP_     ::= 0b00010000  // Whether 16 bit byte reads are 00..01 or 01..02.
+  static I2C-SLVx-CTRL-LENG_    ::= 0b00001111  // Number of bytes to be read from I2C slave X.
+
+  // Register Map for AK09916
+  static REG-AK09916-DEV-ID_    ::= 0x01  // R 1 Device ID.
+  static REG-AK09916-STATUS-1_  ::= 0x10  // R 1 Data status.
+  static REG-AK09916-X-AXIS_    ::= 0x11  // R 2 X Axis LSB (MSB 0x12).  Signed int.
+  static REG-AK09916-Y-AXIS_    ::= 0x13  // R 2 Y Axis LSB (MSB 0x14).  Signed int.
+  static REG-AK09916-Z-AXIS_    ::= 0x15  // R 2 Y Axis LSB (MSB 0x16).  Signed int.
+  static REG-AK09916-STATUS-2_  ::= 0x10  // R 1 Data status.
+  static REG-AK09916-CONTROL-2_ ::= 0x10  // R 1 Control Settings.
+  static REG-AK09916-CONTROL-3_ ::= 0x10  // R 1 Control Settings.
+
+  static AK09916-DEV-ID           ::= 0b00001001 // Device ID should always be this.
+  static AK09916-STATUS-1-DOR_    ::= 0b00000010 // Data Overrun.
+  static AK09916-STATUS-1-DRDY_   ::= 0b00000001 // New data is ready.
+  static AK09916-STATUS-2-HOFL_   ::= 0b00001000 // Hardware Overflow.
+  static AK09916-STATUS-2-RSV28_  ::= 0b00010000 // Reserved for AKM.
+  static AK09916-STATUS-2-RSV29_  ::= 0b00100000 // Reserved for AKM.
+  static AK09916-STATUS-2-RSV30_  ::= 0b01000000 // Reserved for AKM.
+  static AK09916-CONTROL-2-STEST_ ::= 0b00010000 // Self Test Mode.
+  static AK09916-CONTROL-2-MODE4_ ::= 0b00001000 // Continuous Mode 4.
+  static AK09916-CONTROL-2-MODE3_ ::= 0b00000110 // Continuous Mode 3.
+  static AK09916-CONTROL-2-MODE2_ ::= 0b00000100 // Continuous Mode 2.
+  static AK09916-CONTROL-2-MODE1_ ::= 0b00000010 // Continuous Mode 1.
+  static AK09916-CONTROL-2-MODE0_ ::= 0b00000001 // Single Measurement Mode.
+  static AK09916-CONTROL-2-OFF_   ::= 0b00000000 // Power down mode.
+  static AK09916-CONTROL-3-SRST_  ::= 0b00000001 // Software Reset.
+
+  static AK09916-I2C-ADDRESS ::= 0x0C  // Magnetometer I2C address when configured for bus bridging.
+
+  // $write-register_ statics for bit width.  All 16 bit read/writes are LE.
+  static WIDTH-8_ ::= 8
+  static WIDTH-16_ ::= 16
+  static DEFAULT-REGISTER-WIDTH_ ::= WIDTH-8_
+
   accel-sensitivity_/float := 0.0
   gyro-sensitivity_/float := 0.0
 
-  reg_/Registers
+  reg_/Registers := ?
+  logger_/log.Logger := ?
 
-  constructor dev/Device:
+  constructor dev/Device --logger/log.Logger=log.default:
     reg_ = dev.registers
+    logger_ = logger.with-name "icm20948"
 
   on:
     tries := 5
@@ -145,3 +248,117 @@ class Driver:
 
   set-bank_ bank/int:
     reg_.write-u8 REGISTER-REG-BANK-SEL_ bank << 4
+
+
+  /**
+  Enables I2C bypass such that AK09916 appears and is reachable on external I2C bus.
+
+  Requires the ICM20948 device to be turned $on.
+
+  This is largely for testing/debugging the outputs of the AK09916.  It is
+    not used for any other reasons.  As the MCU must manage timing there is no
+    synchronization with accel/gyro. The bus will conflict if it is
+    misconfigured.  The mode prevents DMP fusion. This mode also prevents access
+    to AK09916 data over SPI.
+  */
+  enable-i2c-bypass -> none:
+    set-bank_ 0
+    // Disable I2C Master:
+    write-register_ REGISTER-USER-CTRL_ 0 --mask=USER-CTRL-I2C-MST-EN_
+    // Enable bypass mux:
+    write-register_ REGISTER-INT-PIN-CFG_ 1 --mask=INT-PIN-CFG-BYPASS-EN_
+
+  /**
+  Reads and optionally masks/parses register data. (Little-endian.)
+  */
+  read-register_
+      register/int
+      --mask/int?=null
+      --offset/int?=null
+      --width/int=DEFAULT-REGISTER-WIDTH_
+      --signed/bool=false -> any:
+    assert: (width == 8) or (width == 16)
+    raw/ByteArray := #[]
+
+    if mask == null:
+      if width == 8: mask = 0xFF
+      else: mask = 0xFFFF
+    if offset == null:
+      offset = mask.count-trailing-zeros
+
+    register-value/int? := null
+    if width == 8:
+      if signed:
+        register-value = reg_.read-i8 register
+      else:
+        register-value = reg_.read-u8 register
+    else:
+      if signed:
+        register-value = reg_.read-i16-le register
+      else:
+        register-value = reg_.read-u16-le register
+
+    if register-value == null:
+      logger_.error "read-register_ failed" --tags={"register":register}
+      throw "read-register_ failed."
+
+    if ((mask == 0xFFFF) or (mask == 0xFF)) and (offset == 0):
+      return register-value
+    else:
+      masked-value := (register-value & mask) >> offset
+      return masked-value
+
+  /**
+  Writes register data - either masked or full register writes. (Little-endian.)
+  */
+  write-register_
+      register/int
+      value/int
+      --mask/int?=null
+      --offset/int?=null
+      --width/int=DEFAULT-REGISTER-WIDTH_
+      --signed/bool=false -> none:
+    assert: (width == 8) or (width == 16)
+    if mask == null:
+      if width == 8: mask = 0xFF
+      else: mask = 0xFFFF
+    if offset == null:
+      offset = mask.count-trailing-zeros
+
+    field-mask/int := (mask >> offset)
+    assert: ((value & ~field-mask) == 0)  // fit check
+
+    // Full-width direct write
+    if ((width == 8)  and (mask == 0xFF)  and (offset == 0)) or
+      ((width == 16) and (mask == 0xFFFF) and (offset == 0)):
+      if width == 8:
+        signed ? reg_.write-i8 register (value & 0xFF) : reg_.write-u8 register (value & 0xFF)
+      else:
+        signed ? reg_.write-i16-le register (value & 0xFFFF) : reg_.write-u16-le register (value & 0xFFFF)
+      return
+
+    // Read Reg for modification
+    old-value/int? := null
+    if width == 8:
+      if signed :
+        old-value = reg_.read-i8 register
+      else:
+        old-value = reg_.read-u8 register
+    else:
+      if signed :
+        old-value = reg_.read-i16-le register
+      else:
+        old-value = reg_.read-u16-le register
+
+    if old-value == null:
+      logger_.error "write-register_ read existing value (for modification) failed" --tags={"register":register}
+      throw "write-register_ read failed"
+
+    new-value/int := (old-value & ~mask) | ((value & field-mask) << offset)
+    if width == 8:
+      signed ? reg_.write-i8 register new-value : reg_.write-u8 register new-value
+      return
+    else:
+      signed ? reg_.write-i16-le register new-value : reg_.write-u16-le register new-value
+      return
+    throw "write-register_: Unhandled Circumstance."

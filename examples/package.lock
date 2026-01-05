@@ -1,5 +1,8 @@
 prefixes:
+  ak09916: toit-ak09916
   icm20948: ..
 packages:
   ..:
     path: ..
+  toit-ak09916:
+    path: ../../toit-ak09916

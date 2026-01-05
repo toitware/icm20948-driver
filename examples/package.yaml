@@ -1,0 +1,5 @@
+dependencies:
+  ak09916:
+    path: ../../toit-ak09916/
+  icm20948:
+    path: ..
