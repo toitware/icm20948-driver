@@ -35,7 +35,15 @@ class Driver:
   static REGISTER-PWR-MGMT-1_     ::= 0x06
   static REGISTER-PWR-MGMT-2_     ::= 0x07
   static REGISTER-INT-PIN-CFG_    ::= 0x0F
+  static REGISTER-INT-ENABLE      ::= 0x10
+  static REGISTER-INT-ENABLE-1    ::= 0x11
+  static REGISTER-INT-ENABLE-2    ::= 0x12
+  static REGISTER-INT-ENABLE-3    ::= 0x13
+  static REGISTER-I2C-MST-STATUS  ::= 0x17
+  static REGISTER-INT-STATUS      ::= 0x19
   static REGISTER-INT-STATUS-1_   ::= 0x1A
+  static REGISTER-INT-STATUS-2    ::= 0x1B
+  static REGISTER-INT-STATUS-3    ::= 0x1C
   static REGISTER-ACCEL-XOUT-H_   ::= 0x2D
   static REGISTER-ACCEL-XOUT-L_   ::= 0x2E
   static REGISTER-ACCEL-YOUT-H_   ::= 0x2F
@@ -49,10 +57,41 @@ class Driver:
   static REGISTER-GYRO-ZOUT-H_    ::= 0x37
   static REGISTER-GYRO-ZOUT-L_    ::= 0x38
 
+  static REGISTER-EXT-SLV-DATA-00_ ::= 0x3b
+  static REGISTER-EXT-SLV-DATA-01_ ::= 0x3c
+  static REGISTER-EXT-SLV-DATA-02_ ::= 0x3d
+  //...
+  static REGISTER-EXT-SLV-DATA-23_ ::= 0x52
+
+  static REGISTER-FIFO-EN-1        ::= 0x66
+  static REGISTER-FIFO-EN-2        ::= 0x67
+  static REGISTER-FIFO-RST         ::= 0x68
+  static REGISTER-FIFO-MODE        ::= 0x69
+  static REGISTER-FIFO-COUNT       ::= 0x70
+  static REGISTER-FIFO-R-W         ::= 0x72
+  static REGISTER-DATA-RDY-STATUS  ::= 0x74
+  static REGISTER-FIFO-CFG         ::= 0x76
+
+
+  // Masks: $REGISTER-USER-CTRL_
+  static USER-CTRL-DMP-EN_      ::= 0b10000000
+  static USER-CTRL-FIFO-EN_     ::= 0b01000000
+  static USER-CTRL-I2C-MST-EN_  ::= 0b00100000
+  static USER-CTRL-I2C-IF-DIS_  ::= 0b00010000  // Reset I2C Slave module and put the serial interface in SPI mode only.
+  static USER-CTRL-DMP-RST_     ::= 0b00001000  // Reset DMP. Asynchronous. Takes 1 clock cycle of 20 Mhz clock.
+  static USER-CTRL-SRAM-RST_    ::= 0b00000100  // Reset SRAM. Asynchronous. Takes 1 clock cycle of 20 Mhz clock.
+  static USER-CTRL-I2C-MST-RST_ ::= 0b00000010  // Reset I2C. Asynchronous. Takes 1 clock cycle of 20 Mhz clock. Could cause I2C slave to hang. See datasheet.
+
+  // Masks: REGISTER-LP-CONFIG_
+  static LP-CONFIG-I2C-MST-CYCLE_    ::= 0b01000000
+  static LP-CONFIG-I2C-ACCEL-CYCLE_  ::= 0b00100000
+  static LP-CONFIG-I2C-GYRO-CYCLE_   ::= 0b00010000
+
   // Bank 2
   static REGISTER-GYRO-SMPLRT-DIV_  ::= 0x0
   static REGISTER-GYRO-CONFIG-1_    ::= 0x1
   static REGISTER-GYRO-CONFIG-2_    ::= 0x2
+  static REGISTER-ODR-ALIGN-EN_     ::= 0x9
   static REGISTER-ACCEL-CONFIG_     ::= 0x14
   static REGISTER-ACCEL-CONFIG-2_   ::= 0x15
 
@@ -61,6 +100,13 @@ class Driver:
   static REGISTER-I2C-MST-CTRL_       ::= 0x01
   static REGISTER-I2C-MST-DELAY-CTRL_ ::= 0x02
 
+  // Slave read/write engines:
+  // SLV0–SLV3: continuous / automatic reads - Repeatedly read data from the
+  //   external sensors and deposit it into Bank 0 $REGISTER-EXT-SLV-DATA-00_
+  //   through to REGISTER-EXT-SLV-DATA-00_23.
+  // SLV4: one-shot command channel - Perform single, blocking I²C transactions
+  //   (writes or reads).  Result goes into $REGISTER-I2C-SLV4-DI_.
+  //   Must wait for 'DONE' from I2C_MST_STATUS.
   static REGISTER-I2C-SLV0-ADDR_      ::= 0x03  // R/W and PHY address of I2C Slave x.
   static REGISTER-I2C-SLV0-REG_       ::= 0x04  // I2C slave x register address from where to begin data transfer.
   static REGISTER-I2C-SLV0-CTRL_      ::= 0x05  //
@@ -87,14 +133,6 @@ class Driver:
   static REGISTER-I2C-SLV4-DO_        ::= 0x16  // Data OUT when slave 4 is set to write.
   static REGISTER-I2C-SLV4-DI_        ::= 0x17  // Data IN when slave 4.
 
-  // Masks: $REGISTER-USER-CTRL_
-  static USER-CTRL-DMP-EN_      ::= 0b10000000
-  static USER-CTRL-FIFO-EN_     ::= 0b01000000
-  static USER-CTRL-I2C-MST-EN_  ::= 0b00100000
-  static USER-CTRL-I2C-IF-DIS_  ::= 0b00010000  // Reset I2C Slave module and put the serial interface in SPI mode only.
-  static USER-CTRL-DMP-RST_     ::= 0b00001000  // Reset DMP. Asynchronous. Takes 1 clock cycle of 20 Mhz clock.
-  static USER-CTRL-SRAM-RST_    ::= 0b00000100  // Reset SRAM. Asynchronous. Takes 1 clock cycle of 20 Mhz clock.
-  static USER-CTRL-I2C-MST-RST_ ::= 0b00000010  // Reset I2C. Asynchronous. Takes 1 clock cycle of 20 Mhz clock. Could cause I2C slave to hang. See datasheet.
 
   // Masks: $REGISTER-INT-PIN-CFG_
   static INT-PIN-CFG-INT1-ACTL_             ::= 0b10000000
@@ -111,7 +149,7 @@ class Driver:
   static I2C-MST-CLK_     ::= 0b00001111 // To use 400 kHz, MAX, it is recommended to set I2C-MST-CLK_ to 7.
 
   // Masks: REGISTER-I2C-SLVx-ADDR_ [x=0..4]
-  static I2C-SLVx-ADDR-RW_     ::= 0b10000000  // Transfer is R or W for slave x
+  static I2C-SLVx-ADDR-R_      ::= 0b10000000  // 1 = transfer is R for slave x
   static I2C-SLVx-ADDR-I2C-ID_ ::= 0b01111111  // PHY address of I2C slave x
 
   // Masks: REGISTER-I2C-SLVx-CTRL_ [x=0..4]
@@ -121,15 +159,24 @@ class Driver:
   static I2C-SLVx-CTRL-GRP_     ::= 0b00010000  // Whether 16 bit byte reads are 00..01 or 01..02.
   static I2C-SLVx-CTRL-LENG_    ::= 0b00001111  // Number of bytes to be read from I2C slave X.
 
+  // Masks: REGISTER-I2C-MST-DELAY-CTRL_
+  static I2C-MST-DELAY-ES-SHADOW_ ::= 0b10000000
+  static I2C-MST-DELAY-SLV4-EN_   ::= 0b00010000
+  static I2C-MST-DELAY-SLV3-EN_   ::= 0b00001000
+  static I2C-MST-DELAY-SLV2-EN_   ::= 0b00000100
+  static I2C-MST-DELAY-SLV1-EN_   ::= 0b00000010
+  static I2C-MST-DELAY-SLV0-EN_   ::= 0b00000001
+
   // Register Map for AK09916
   static REG-AK09916-DEV-ID_    ::= 0x01  // R 1 Device ID.
   static REG-AK09916-STATUS-1_  ::= 0x10  // R 1 Data status.
   static REG-AK09916-X-AXIS_    ::= 0x11  // R 2 X Axis LSB (MSB 0x12).  Signed int.
   static REG-AK09916-Y-AXIS_    ::= 0x13  // R 2 Y Axis LSB (MSB 0x14).  Signed int.
   static REG-AK09916-Z-AXIS_    ::= 0x15  // R 2 Y Axis LSB (MSB 0x16).  Signed int.
-  static REG-AK09916-STATUS-2_  ::= 0x10  // R 1 Data status.
-  static REG-AK09916-CONTROL-2_ ::= 0x10  // R 1 Control Settings.
-  static REG-AK09916-CONTROL-3_ ::= 0x10  // R 1 Control Settings.
+  static REG-AK09916-STATUS-2_  ::= 0x18  // R 1 Data status.
+  static REG-AK09916-CONTROL-1_ ::= 0x30  // R 1 Control Settings.
+  static REG-AK09916-CONTROL-2_ ::= 0x31  // R 1 Control Settings.
+  static REG-AK09916-CONTROL-3_ ::= 0x32  // R 1 Control Settings.
 
   static AK09916-DEV-ID           ::= 0b00001001 // Device ID should always be this.
   static AK09916-STATUS-1-DOR_    ::= 0b00000010 // Data Overrun.
