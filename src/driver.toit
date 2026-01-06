@@ -35,15 +35,15 @@ class Driver:
   static REGISTER-PWR-MGMT-1_     ::= 0x06
   static REGISTER-PWR-MGMT-2_     ::= 0x07
   static REGISTER-INT-PIN-CFG_    ::= 0x0F
-  static REGISTER-INT-ENABLE      ::= 0x10
-  static REGISTER-INT-ENABLE-1    ::= 0x11
-  static REGISTER-INT-ENABLE-2    ::= 0x12
-  static REGISTER-INT-ENABLE-3    ::= 0x13
-  static REGISTER-I2C-MST-STATUS  ::= 0x17
-  static REGISTER-INT-STATUS      ::= 0x19
+  static REGISTER-INT-ENABLE_     ::= 0x10
+  static REGISTER-INT-ENABLE-1_   ::= 0x11
+  static REGISTER-INT-ENABLE-2_   ::= 0x12
+  static REGISTER-INT-ENABLE-3_   ::= 0x13
+  static REGISTER-I2C-MST-STATUS_ ::= 0x17
+  static REGISTER-INT-STATUS_     ::= 0x19
   static REGISTER-INT-STATUS-1_   ::= 0x1A
-  static REGISTER-INT-STATUS-2    ::= 0x1B
-  static REGISTER-INT-STATUS-3    ::= 0x1C
+  static REGISTER-INT-STATUS-2_   ::= 0x1B
+  static REGISTER-INT-STATUS-3_   ::= 0x1C
   static REGISTER-ACCEL-XOUT-H_   ::= 0x2D
   static REGISTER-ACCEL-XOUT-L_   ::= 0x2E
   static REGISTER-ACCEL-YOUT-H_   ::= 0x2F
@@ -63,15 +63,14 @@ class Driver:
   //...
   static REGISTER-EXT-SLV-DATA-23_ ::= 0x52
 
-  static REGISTER-FIFO-EN-1        ::= 0x66
-  static REGISTER-FIFO-EN-2        ::= 0x67
-  static REGISTER-FIFO-RST         ::= 0x68
-  static REGISTER-FIFO-MODE        ::= 0x69
-  static REGISTER-FIFO-COUNT       ::= 0x70
-  static REGISTER-FIFO-R-W         ::= 0x72
-  static REGISTER-DATA-RDY-STATUS  ::= 0x74
-  static REGISTER-FIFO-CFG         ::= 0x76
-
+  static REGISTER-FIFO-EN-1_       ::= 0x66
+  static REGISTER-FIFO-EN-2_       ::= 0x67
+  static REGISTER-FIFO-RST_        ::= 0x68
+  static REGISTER-FIFO-MODE_       ::= 0x69
+  static REGISTER-FIFO-COUNT_      ::= 0x70
+  static REGISTER-FIFO-R-W_        ::= 0x72
+  static REGISTER-DATA-RDY-STATUS_ ::= 0x74
+  static REGISTER-FIFO-CFG_        ::= 0x76
 
   // Masks: $REGISTER-USER-CTRL_
   static USER-CTRL-DMP-EN_      ::= 0b10000000
@@ -103,10 +102,10 @@ class Driver:
   // Slave read/write engines:
   // SLV0–SLV3: continuous / automatic reads - Repeatedly read data from the
   //   external sensors and deposit it into Bank 0 $REGISTER-EXT-SLV-DATA-00_
-  //   through to REGISTER-EXT-SLV-DATA-00_23.
-  // SLV4: one-shot command channel - Perform single, blocking I²C transactions
+  //   through to REGISTER-EXT-SLV-DATA-23_.
+  // SLV4: one-shot command channel - Perform single, blocking I2C transactions
   //   (writes or reads).  Result goes into $REGISTER-I2C-SLV4-DI_.
-  //   Must wait for 'DONE' from I2C_MST_STATUS.
+  //   Must wait for 'DONE' from $REGISTER-I2C-MST-STATUS_.
   static REGISTER-I2C-SLV0-ADDR_      ::= 0x03  // R/W and PHY address of I2C Slave x.
   static REGISTER-I2C-SLV0-REG_       ::= 0x04  // I2C slave x register address from where to begin data transfer.
   static REGISTER-I2C-SLV0-CTRL_      ::= 0x05  //
@@ -178,7 +177,7 @@ class Driver:
   static REG-AK09916-CONTROL-2_ ::= 0x31  // R 1 Control Settings.
   static REG-AK09916-CONTROL-3_ ::= 0x32  // R 1 Control Settings.
 
-  static AK09916-DEV-ID           ::= 0b00001001 // Device ID should always be this.
+  static AK09916-DEV-ID_          ::= 0b00001001 // Device ID should always be this.
   static AK09916-STATUS-1-DOR_    ::= 0b00000010 // Data Overrun.
   static AK09916-STATUS-1-DRDY_   ::= 0b00000001 // New data is ready.
   static AK09916-STATUS-2-HOFL_   ::= 0b00001000 // Hardware Overflow.
