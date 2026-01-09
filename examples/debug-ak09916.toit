@@ -19,9 +19,9 @@ main:
   print
 
   bus := i2c.Bus
-    --sda=gpio.Pin 19
-    --scl=gpio.Pin 20
-    --frequency=400_000
+      --sda=gpio.Pin 19
+      --scl=gpio.Pin 20
+      --frequency=400_000
 
   bus-device-count := bus.scan.size
   if not (bus.test icm20948.Driver.AK09916-I2C-ADDRESS):
