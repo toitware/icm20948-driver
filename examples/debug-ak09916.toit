@@ -25,8 +25,10 @@ main:
 
   bus-device-count := bus.scan.size
   if not bus.test icm20948.Driver.AK09916-I2C-ADDRESS:
-    print "Bus scan has $bus-device-count devices"
+    print "ICM20948 not found."
+    return
 
+  print "Bus scan has $bus-device-count devices"
   device := bus.device icm20948.I2C-ADDRESS-ALT
   sensor := icm20948.Driver device
   sensor.on
@@ -36,6 +38,9 @@ main:
   if not bus.test Ak0991x.I2C-ADDRESS:
     print "bus missing the device. stopping..."
     return
+
+  new-bus-scan := bus.scan
+  print "After bypass, bus scan has $new-bus-scan.size devices"
 
   ak-device := bus.device Ak0991x.I2C-ADDRESS
   ak-sensor := Ak0991x ak-device
