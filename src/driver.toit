@@ -331,7 +331,7 @@ class Driver:
     if offset == null:
       offset = mask.count-trailing-zeros
 
-    register-value/int? := null
+    register-value/int := ?
     if width == 8:
       if signed:
         register-value = reg_.read-i8 register
@@ -370,10 +370,10 @@ class Driver:
     if offset == null:
       offset = mask.count-trailing-zeros
 
-    field-mask/int := (mask >> offset)
-    assert: ((value & ~field-mask) == 0)  // fit check
+    field-mask/int := mask >> offset
+    assert: ((value & ~field-mask) == 0)  // Fit check
 
-    // Full-width direct write
+    // Full-width direct write:
     if ((width == 8)  and (mask == 0xFF)  and (offset == 0)) or
       ((width == 16) and (mask == 0xFFFF) and (offset == 0)):
       if width == 8:
@@ -382,8 +382,8 @@ class Driver:
         signed ? reg_.write-i16-le register (value & 0xFFFF) : reg_.write-u16-le register (value & 0xFFFF)
       return
 
-    // Read Reg for modification
-    old-value/int? := null
+    // Read Reg for modification:
+    old-value/int := ?
     if width == 8:
       if signed :
         old-value = reg_.read-i8 register
@@ -406,4 +406,3 @@ class Driver:
     else:
       signed ? reg_.write-i16-le register new-value : reg_.write-u16-le register new-value
       return
-    throw "write-register_: Unhandled Circumstance."
