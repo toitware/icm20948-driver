@@ -24,7 +24,7 @@ main:
       --frequency=400_000
 
   bus-device-count := bus.scan.size
-  if not (bus.test icm20948.Driver.AK09916-I2C-ADDRESS):
+  if not bus.test icm20948.Driver.AK09916-I2C-ADDRESS:
     print "Bus scan has $bus-device-count devices"
 
   device := bus.device icm20948.I2C-ADDRESS-ALT
@@ -33,7 +33,7 @@ main:
 
   // Enable bypass:
   sensor.enable-i2c-bypass
-  if not (bus.test Ak0991x.I2C-ADDRESS):
+  if not bus.test Ak0991x.I2C-ADDRESS:
     print "bus missing the device. stopping..."
     return
 
