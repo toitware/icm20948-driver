@@ -132,7 +132,6 @@ class Driver:
   static REGISTER-I2C-SLV4-DO_        ::= 0x16  // Data OUT when slave 4 is set to write.
   static REGISTER-I2C-SLV4-DI_        ::= 0x17  // Data IN when slave 4.
 
-
   // Masks: $REGISTER-INT-PIN-CFG_
   static INT-PIN-CFG-INT1-ACTL_             ::= 0b10000000
   static INT-PIN-CFG-INT1-OPEN_             ::= 0b01000000
