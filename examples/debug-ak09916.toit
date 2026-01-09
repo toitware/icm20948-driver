@@ -1,6 +1,6 @@
 // Copyright (C) 2025 Toit Contributors. All rights reserved.
-// Use of this source code is governed by an MIT-style license that can be found
-// in the LICENSE file.
+// Use of this source code is governed by a Zero-Clause BSD license that can
+// be found in the EXAMPLES_LICENSE file.
 
 /**
 Uses I2C bypass mode to allow access to the AK09916 directly on the host

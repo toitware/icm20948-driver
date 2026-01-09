@@ -1,0 +1,36 @@
+## For more: https://github.com/github/gitignore
+
+icm20948_img.dmp3a.toit
+
+## This Package - so I can keep reference material with source:
+.reference/
+
+## Toit
+.packages/
+.jaguar
+
+## IDEs
+# VS Code
+.vscode/
+# Eclipse
+.project
+.classpath
+.settings/
+
+## OS Junk
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+# Linux
+*~
+.nfs*
+
+## Environment & Secrets
+.env
+.env.*
