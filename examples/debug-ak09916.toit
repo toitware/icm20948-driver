@@ -13,14 +13,14 @@ This is for testing purposes only.  The bypass configuration will remain until
 import gpio
 import i2c
 import icm20948
-import ak09916
+import ak0991x show *
 
 main:
   print
 
   bus := i2c.Bus
-    --sda=gpio.Pin 8
-    --scl=gpio.Pin 9
+    --sda=gpio.Pin 19
+    --scl=gpio.Pin 20
     --frequency=400_000
 
   bus-device-count := bus.scan.size
@@ -33,16 +33,16 @@ main:
 
   // Enable bypass:
   sensor.enable-i2c-bypass
-  if not (bus.test icm20948.Driver.AK09916-I2C-ADDRESS):
+  if not (bus.test Ak0991x.I2C-ADDRESS):
     print "bus missing the device. stopping..."
     return
 
-  ak-device := bus.device ak09916.Ak09916.I2C-ADDRESS
-  ak-sensor := ak09916.Ak09916 ak-device
+  ak-device := bus.device Ak0991x.I2C-ADDRESS
+  ak-sensor := Ak0991x ak-device
 
   print "Bus contains AK09916."
   print "Hardware ID: 0x$(%02x ak-sensor.get-hardware-id)"
-  ak-sensor.set-operating-mode ak09916.Ak09916.OPMODE-CONT-MODE1
+  ak-sensor.set-operating-mode Ak0991x.OPMODE-CONT-MODE1-10HZ
   sleep --ms=250
   print "Data Ready: $(ak-sensor.is-data-ready)"
   print "Magnetic Field: $ak-sensor.read-magnetic-field"
