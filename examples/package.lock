@@ -1,5 +1,12 @@
+sdk: ^2.0.0-alpha.189
 prefixes:
+  ak0991x: toit-ak0991x
   icm20948: ..
 packages:
   ..:
     path: ..
+  toit-ak0991x:
+    url: github.com/milkmansson/toit-ak0991x
+    name: ak0991x
+    version: 1.0.1
+    hash: 59bcec9dea78a4cccca8dd6c48a0e152d256a39e

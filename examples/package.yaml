@@ -1,0 +1,6 @@
+dependencies:
+  ak0991x:
+    url: github.com/milkmansson/toit-ak0991x
+    version: ^1.0.1
+  icm20948:
+    path: ..
