@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Toit Contributors. All rights reserved.
+// Copyright (C) 2026 Toit Contributors.
 // Use of this source code is governed by a Zero-Clause BSD license that can
 // be found in the EXAMPLES_LICENSE file.
 
@@ -49,7 +49,7 @@ main:
   print "Hardware ID: 0x$(%02x ak-sensor.get-hardware-id)"
   ak-sensor.set-operating-mode Ak0991x.OPMODE-CONT-MODE1-10HZ
   sleep --ms=250
-  print "Data Ready: $(ak-sensor.is-data-ready)"
+  print "Data Ready: $ak-sensor.is-data-ready"
   print "Magnetic Field: $ak-sensor.read-magnetic-field"
   print "Magnetic Bearing: $ak-sensor.read-bearing"
   print
