@@ -146,16 +146,16 @@ class Driver:
   static I2C-MST-P-NSR_   ::= 0b00010000
   static I2C-MST-CLK_     ::= 0b00001111 // To use 400 kHz, MAX, it is recommended to set I2C-MST-CLK_ to 7.
 
-  // Masks: REGISTER-I2C-SLVx-ADDR_ [x=0..4]
+  // Masks: REGISTER-I2C-SLVX-ADDR_ [x=0..4]
   static I2C-SLVx-ADDR-R_      ::= 0b10000000  // 1 = transfer is R for slave x
   static I2C-SLVx-ADDR-I2C-ID_ ::= 0b01111111  // PHY address of I2C slave x
 
-  // Masks: REGISTER-I2C-SLVx-CTRL_ [x=0..4]
-  static I2C-SLVx-CTRL-EN_      ::= 0b10000000  // Enable reading data from this slave at the sample rate and storing data at the first available EXT_SENS_DATA register, which is always EXT_SENS_DATA_00 for I 2C slave 0
-  static I2C-SLVx-CTRL-BYTE-SW_ ::= 0b01000000  // 1 – Swap bytes when reading both the low and high byte of a word.
-  static I2C-SLVx-CTRL-REG-DIS_ ::= 0b00100000  // Disables writing the register value - when set it will only read/write data.
-  static I2C-SLVx-CTRL-GRP_     ::= 0b00010000  // Whether 16 bit byte reads are 00..01 or 01..02.
-  static I2C-SLVx-CTRL-LENG_    ::= 0b00001111  // Number of bytes to be read from I2C slave X.
+  // Masks: REGISTER-I2C-SLVX-CTRL_ [x=0..4]
+  static I2C-SLVX-CTRL-EN_      ::= 0b10000000  // Enable reading data from this slave at the sample rate and storing data at the first available EXT_SENS_DATA register, which is always EXT_SENS_DATA_00 for I 2C slave 0
+  static I2C-SLVX-CTRL-BYTE-SW_ ::= 0b01000000  // 1 – Swap bytes when reading both the low and high byte of a word.
+  static I2C-SLVX-CTRL-REG-DIS_ ::= 0b00100000  // Disables writing the register value - when set it will only read/write data.
+  static I2C-SLVX-CTRL-GRP_     ::= 0b00010000  // Whether 16 bit byte reads are 00..01 or 01..02.
+  static I2C-SLVX-CTRL-LENG_    ::= 0b00001111  // Number of bytes to be read from I2C slave X.
 
   // Masks: REGISTER-I2C-MST-DELAY-CTRL_
   static I2C-MST-DELAY-ES-SHADOW_ ::= 0b10000000
@@ -316,12 +316,12 @@ class Driver:
   /**
   Reads and optionally masks/parses register data. (Little-endian.)
   */
-  read-register_
+  read-register_ -> int
       register/int
       --mask/int?=null
       --offset/int?=null
       --width/int=DEFAULT-REGISTER-WIDTH_
-      --signed/bool=false -> any:
+      --signed/bool=false:
     assert: (width == 8) or (width == 16)
     raw/ByteArray := #[]
 
@@ -356,13 +356,13 @@ class Driver:
   /**
   Writes register data - either masked or full register writes. (Little-endian.)
   */
-  write-register_
+  write-register_ -> none
       register/int
       value/int
       --mask/int?=null
       --offset/int?=null
       --width/int=DEFAULT-REGISTER-WIDTH_
-      --signed/bool=false -> none:
+      --signed/bool=false:
     assert: (width == 8) or (width == 16)
     if mask == null:
       if width == 8: mask = 0xFF
