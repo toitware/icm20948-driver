@@ -323,35 +323,28 @@ class Driver:
       --width/int=DEFAULT-REGISTER-WIDTH_
       --signed/bool=false:
     assert: (width == 8) or (width == 16)
-    raw/ByteArray := #[]
 
-    if mask == null:
-      if width == 8: mask = 0xFF
-      else: mask = 0xFFFF
-    if offset == null:
-      offset = mask.count-trailing-zeros
+    if not mask: mask = (width == 8) ? 0xFF : 0xFFFF
+    if not offset: offset = mask.count-trailing-zeros
+
+    if width == 8: assert: (mask & ~0xFF) == 0
+    else: assert: (mask & ~0xFFFF) == 0
+    assert: mask != 0
+
+    full_width := (offset == 0) and ((width == 8 and mask == 0xFF) or (width == 16 and mask == 0xFFFF))
+    if signed and not full_width:
+      throw "masked signed read not supported (need sign-extension by field width)"
 
     register-value/int := ?
     if width == 8:
-      if signed:
-        register-value = reg_.read-i8 register
-      else:
-        register-value = reg_.read-u8 register
+      register-value = signed ? reg_.read-i8 register : reg_.read-u8 register
     else:
-      if signed:
-        register-value = reg_.read-i16-le register
-      else:
-        register-value = reg_.read-u16-le register
+      register-value = signed ? reg_.read-i16-le register : reg_.read-u16-le register
 
-    if register-value == null:
-      logger_.error "read-register_ failed" --tags={"register":register}
-      throw "read-register_ failed."
-
-    if ((mask == 0xFFFF) or (mask == 0xFF)) and (offset == 0):
+    if full-width:
       return register-value
-    else:
-      masked-value := (register-value & mask) >> offset
-      return masked-value
+
+    return (register-value & mask) >> offset
 
   /**
   Writes register data - either masked or full register writes. (Little-endian.)
@@ -364,45 +357,47 @@ class Driver:
       --width/int=DEFAULT-REGISTER-WIDTH_
       --signed/bool=false:
     assert: (width == 8) or (width == 16)
-    if mask == null:
-      if width == 8: mask = 0xFF
-      else: mask = 0xFFFF
-    if offset == null:
-      offset = mask.count-trailing-zeros
 
+    if not mask: mask = (width == 8) ? 0xFF : 0xFFFF
+    if not offset: offset = mask.count-trailing-zeros
+
+    // Check mask fits register width:
+    if width == 8: assert: (mask & ~0xFF) == 0
+    else: assert: (mask & ~0xFFFF) == 0
+
+    // Determine if write is full width:
+    full-width := (offset == 0) and ((width == 8 and mask == 0xFF) or (width == 16 and mask == 0xFFFF))
+
+    // For now don't accept negative numbers as masked writes.
+    if signed and not full-width:
+      throw "masked signed write not supported (encode to field bits first)"
+
+    // Mask must fit within the register width:
     field-mask/int := mask >> offset
-    assert: ((value & ~field-mask) == 0)  // Fit check
+    assert: field-mask != 0
+
+    // Check an unsigned write is actually > 0:
+    if not signed:
+      assert: value >= 0 and value <= field-mask
+    else:
+      if width == 8: assert: -128 <= value and value <= 127
+      else: assert: -32768 <= value and value <= 32767
 
     // Full-width direct write:
-    if ((width == 8)  and (mask == 0xFF)  and (offset == 0)) or
-      ((width == 16) and (mask == 0xFFFF) and (offset == 0)):
+    if full-width:
       if width == 8:
-        signed ? reg_.write-i8 register (value & 0xFF) : reg_.write-u8 register (value & 0xFF)
+        signed ? reg_.write-i8 register value : reg_.write-u8 register value
       else:
-        signed ? reg_.write-i16-le register (value & 0xFFFF) : reg_.write-u16-le register (value & 0xFFFF)
+        signed ? reg_.write-i16-le register value : reg_.write-u16-le register value
       return
 
     // Read Reg for modification:
-    old-value/int := ?
-    if width == 8:
-      if signed :
-        old-value = reg_.read-i8 register
-      else:
-        old-value = reg_.read-u8 register
-    else:
-      if signed :
-        old-value = reg_.read-i16-le register
-      else:
-        old-value = reg_.read-u16-le register
+    old-value/int := (width == 8) ? reg_.read-u8 register : reg_.read-u16-le register
+    reg-mask/int := (width == 8) ? 0xFF : 0xFFFF
+    new-value/int := (old-value & ~mask) | ((value & field-mask) << offset) & reg-mask
 
-    if old-value == null:
-      logger_.error "write-register_ read existing value (for modification) failed" --tags={"register":register}
-      throw "write-register_ read failed"
-
-    new-value/int := (old-value & ~mask) | ((value & field-mask) << offset)
+    // Write modified value:
     if width == 8:
-      signed ? reg_.write-i8 register new-value : reg_.write-u8 register new-value
-      return
+      reg_.write-u8 register new-value
     else:
-      signed ? reg_.write-i16-le register new-value : reg_.write-u16-le register new-value
-      return
+      reg_.write-u16-le register new-value
