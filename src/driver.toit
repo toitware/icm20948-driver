@@ -147,8 +147,8 @@ class Driver:
   static I2C-MST-CLK_     ::= 0b00001111 // To use 400 kHz, MAX, it is recommended to set I2C-MST-CLK_ to 7.
 
   // Masks: REGISTER-I2C-SLVX-ADDR_ [x=0..4]
-  static I2C-SLVx-ADDR-R_      ::= 0b10000000  // 1 = transfer is R for slave x
-  static I2C-SLVx-ADDR-I2C-ID_ ::= 0b01111111  // PHY address of I2C slave x
+  static I2C-SLVX-ADDR-R_      ::= 0b10000000  // 1 = transfer is R for slave x
+  static I2C-SLVX-ADDR-I2C-ID_ ::= 0b01111111  // PHY address of I2C slave x
 
   // Masks: REGISTER-I2C-SLVX-CTRL_ [x=0..4]
   static I2C-SLVX-CTRL-EN_      ::= 0b10000000  // Enable reading data from this slave at the sample rate and storing data at the first available EXT_SENS_DATA register, which is always EXT_SENS_DATA_00 for I 2C slave 0
