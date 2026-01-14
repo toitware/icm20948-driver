@@ -326,8 +326,10 @@ class Driver:
     if not mask: mask = (width == 8) ? 0xFF : 0xFFFF
     if not offset: offset = mask.count-trailing-zeros
 
-    if width == 8: assert: (mask & ~0xFF) == 0
-    else: assert: (mask & ~0xFFFF) == 0
+    // Check mask fits register width:
+    assert:
+      if width == 8: (mask & ~0xff) == 0
+      else: (mask & ~0xffff) == 0
     assert: mask != 0
 
     full_width := (offset == 0) and ((width == 8 and mask == 0xFF) or (width == 16 and mask == 0xFFFF))
@@ -361,8 +363,9 @@ class Driver:
     if not offset: offset = mask.count-trailing-zeros
 
     // Check mask fits register width:
-    if width == 8: assert: (mask & ~0xFF) == 0
-    else: assert: (mask & ~0xFFFF) == 0
+    assert:
+      if width == 8: (mask & ~0xff) == 0
+      else: (mask & ~0xffff) == 0
 
     // Determine if write is full width:
     full-width := (offset == 0) and ((width == 8 and mask == 0xFF) or (width == 16 and mask == 0xFFFF))
