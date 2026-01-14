@@ -60,7 +60,6 @@ class Driver:
   static REGISTER-EXT-SLV-DATA-00_ ::= 0x3b
   static REGISTER-EXT-SLV-DATA-01_ ::= 0x3c
   static REGISTER-EXT-SLV-DATA-02_ ::= 0x3d
-  //...
   static REGISTER-EXT-SLV-DATA-23_ ::= 0x52
 
   static REGISTER-FIFO-EN-1_       ::= 0x66
