@@ -313,7 +313,7 @@ class Driver:
     write-register_ REGISTER-INT-PIN-CFG_ 1 --mask=INT-PIN-CFG-BYPASS-EN_
 
   /**
-  Reads and optionally masks/parses register data. (Little-endian.)
+  Reads and optionally masks/parses register data. (Big-endian.)
   */
   read-register_ -> int
       register/int
@@ -338,7 +338,7 @@ class Driver:
     if width == 8:
       register-value = signed ? reg_.read-i8 register : reg_.read-u8 register
     else:
-      register-value = signed ? reg_.read-i16-le register : reg_.read-u16-le register
+      register-value = signed ? reg_.read-i16-be register : reg_.read-u16-be register
 
     if full-width:
       return register-value
@@ -346,7 +346,7 @@ class Driver:
     return (register-value & mask) >> offset
 
   /**
-  Writes register data - either masked or full register writes. (Little-endian.)
+  Writes register data - either masked or full register writes. (Big-endian.)
   */
   write-register_ -> none
       register/int
@@ -387,11 +387,11 @@ class Driver:
       if width == 8:
         signed ? reg_.write-i8 register value : reg_.write-u8 register value
       else:
-        signed ? reg_.write-i16-le register value : reg_.write-u16-le register value
+        signed ? reg_.write-i16-be register value : reg_.write-u16-be register value
       return
 
     // Read Reg for modification:
-    old-value/int := (width == 8) ? reg_.read-u8 register : reg_.read-u16-le register
+    old-value/int := (width == 8) ? reg_.read-u8 register : reg_.read-u16-be register
     reg-mask/int := (width == 8) ? 0xFF : 0xFFFF
     new-value/int := (old-value & ~mask) | ((value & field-mask) << offset) & reg-mask
 
@@ -399,4 +399,4 @@ class Driver:
     if width == 8:
       reg_.write-u8 register new-value
     else:
-      reg_.write-u16-le register new-value
+      reg_.write-u16-be register new-value
