@@ -356,8 +356,10 @@ class Driver:
     // Enable bypass mux:
     write-register_ 0 REGISTER-INT-PIN-CFG_ 1 --mask=INT-PIN-CFG-BYPASS-EN_
 
-
-
+  /** Reverses $enable-i2c-bypass. */
+  disable-i2c-bypass -> none:
+    write-register_ 0 REGISTER-INT-PIN-CFG_ 0 --mask=INT-PIN-CFG-BYPASS-EN_
+    write-register_ 0 REGISTER-USER-CTRL_ 1 --mask=USER-CTRL-I2C-MST-EN_
 
   /**
   Reads and optionally masks/parses register data. (Big-endian.)
