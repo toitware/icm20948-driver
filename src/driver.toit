@@ -314,6 +314,18 @@ class Driver:
     reg_.write-u8 REGISTER-REG-BANK-SEL_ bank << 4
     bank_ = bank
 
+  /** Sets duty-cycle mode for accelerometer. */
+  set-accel-duty-cycle-mode_ on/bool -> none:
+    value := 0
+    if on: value = 1
+    write-register_ 0 REGISTER-LP-CONFIG_ value --mask=LP-CONFIG-I2C-ACCEL-CYCLE_
+
+  /** Sets duty-cycle mode for gyroscope. */
+  set-gyro-duty-cycle-mode_ on/bool -> none:
+    value := 0
+    if on: value = 1
+    write-register_ 0 REGISTER-LP-CONFIG_ value --mask=LP-CONFIG-I2C-GYRO-CYCLE_
+
   /**
   Enables I2C bypass such that AK09916 appears and is reachable on external I2C bus.
 
