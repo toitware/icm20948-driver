@@ -7,7 +7,7 @@ Uses I2C bypass mode to allow access to the AK09916 directly on the host
   I2C bus.  It requires the additional ak09916 driver package.
 
 This is for testing purposes only.  The bypass configuration will remain until
-  disabled, or until the next power on/reset.
+  either manually disabled again, or until the next power on/reset.
 */
 
 import gpio
