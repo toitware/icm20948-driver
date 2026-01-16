@@ -1,6 +1,6 @@
-// Copyright (C) 2021 Toitware ApS. All rights reserved.
-// Use of this source code is governed by an MIT-style license that can be found
-// in the LICENSE file.
+// Copyright (C) 2026 Toit Contributors.
+// Use of this source code is governed by a Zero-Clause BSD license that can
+// be found in the EXAMPLES_LICENSE file.
 
 /**
 A simple example of how to use the ICM20948 driver.
