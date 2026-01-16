@@ -288,10 +288,15 @@ class Driver:
     return read-point_ REGISTER-ACCEL-XOUT-H_ accel-sensitivity_
 
   read-gyro -> math.Point3f:
-    while true:
-      rdy := reg_.read-u8 REGISTER-INT-STATUS-1_
-      if rdy == 1: break
-      sleep --ms=1
+    // Wait for ready, but with a timeout.
+    exception := catch:
+      with-timeout COMMAND-TIMEOUT_:
+          while ((read-register_ 0 REGISTER-INT-STATUS-1_) & 0x01) == 0:
+            sleep --ms=1
+
+    if exception:
+      logger_.error "read-gyro timed out" --tags={"timeout-ms":COMMAND-TIMEOUT_.in-ms}
+      throw "read-gyro timed out"
 
     return read-point_ REGISTER-GYRO-XOUT-H_ gyro-sensitivity_
 
