@@ -58,9 +58,9 @@ class Driver:
   static REGISTER-GYRO-ZOUT-H_    ::= 0x37
   static REGISTER-GYRO-ZOUT-L_    ::= 0x38
 
-  static REGISTER-EXT-SLV-DATA-00_ ::= 0x3b
-  static REGISTER-EXT-SLV-DATA-01_ ::= 0x3c
-  static REGISTER-EXT-SLV-DATA-02_ ::= 0x3d
+  static REGISTER-EXT-SLV-DATA-00_ ::= 0x3B
+  static REGISTER-EXT-SLV-DATA-01_ ::= 0x3C
+  static REGISTER-EXT-SLV-DATA-02_ ::= 0x3D
   static REGISTER-EXT-SLV-DATA-23_ ::= 0x52
 
   static REGISTER-FIFO-EN-1_       ::= 0x66
@@ -371,8 +371,8 @@ class Driver:
     if not offset: offset = mask.count-trailing-zeros
 
     assert:
-      if width == WIDTH-8_: (mask & ~0xff) == 0
-      else: (mask & ~0xffff) == 0
+      if width == WIDTH-8_: (mask & ~0xFF) == 0
+      else: (mask & ~0xFFFF) == 0
     assert: mask != 0
 
     full-width := (offset == 0) and ((width == WIDTH-8_ and mask == 0xFF) or (width == WIDTH-16_ and mask == 0xFFFF))
@@ -406,16 +406,16 @@ class Driver:
     assert: 0 <= bank <= 3
     assert: (width == WIDTH-8_) or (width == WIDTH-16_)
 
-    if not mask: mask = (width == WIDTH-8_) ? 0xff : 0xffff
+    if not mask: mask = (width == WIDTH-8_) ? 0xFF : 0xFFFF
     if not offset: offset = mask.count-trailing-zeros
 
     // Check mask fits register width:
     assert:
-      if width == WIDTH-8_: (mask & ~0xff) == 0
-      else: (mask & ~0xffff) == 0
+      if width == WIDTH-8_: (mask & ~0xFF) == 0
+      else: (mask & ~0xFFFF) == 0
 
     // Determine if write is full width:
-    full-width := (offset == 0) and ((width == WIDTH-8_ and mask == 0xff) or (width == WIDTH-16_ and mask == 0xffff))
+    full-width := (offset == 0) and ((width == WIDTH-8_ and mask == 0xFF) or (width == WIDTH-16_ and mask == 0xFFFF))
 
     // For now don't accept negative numbers as masked writes.
     if signed and not full-width:
