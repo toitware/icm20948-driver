@@ -238,36 +238,28 @@ class Driver:
 
 
   configure-accel --scale/int=ACCEL-SCALE-2G:
-    r := reg_.read-u8 REGISTER-LP-CONFIG_
-    reg_.write-u8 REGISTER-LP-CONFIG_ r & ~0b100000
+    set-accel-duty-cycle-mode_ true
 
     // Configure accel.
     cfg := 0b00111_00_1
     cfg |= scale << 1
-    set-bank_ 2
-    reg_.write-u8 REGISTER-ACCEL-CONFIG_ cfg
-    set-bank_ 0
+    write-register_ 2 REGISTER-ACCEL-CONFIG_ cfg
 
     accel-sensitivity_ = ACCEL-SENSITIVITY_[scale]
-
     sleep --ms=10
+    logger_.debug "accelerometer configured"
 
   configure-gyro --scale/int=GYRO-SCALE-250DPS:
-    r := reg_.read-u8 REGISTER-LP-CONFIG_
-    reg_.write-u8 REGISTER-LP-CONFIG_ r & ~0b10000
+    set-gyro-duty-cycle-mode_ true
 
-    set-bank_ 2
-
-    //reg_.write_u8 REGISTER_GYRO_SMPLRT_DIV_ 0
-
-    reg_.write-u8 REGISTER-GYRO-CONFIG-1_ 0b111_00_1 | scale << 1
-    //reg_.write_u8 REGISTER_GYRO_CONFIG_2_ 0b1111
-
-    set-bank_ 0
+    //write-register_ 2 REGISTER_GYRO_SMPLRT_DIV_ 0
+    write-register_ 2 REGISTER-GYRO-CONFIG-1_ (0b111_00_1 | scale << 1)
+    //write-register_ 2 REGISTER_GYRO_CONFIG_2_ 0b1111
 
     gyro-sensitivity_ = GYRO-SENSITIVITY_[scale]
-
     sleep --ms=10
+    logger_.debug "gyroscope configured"
+
 
   off:
 
