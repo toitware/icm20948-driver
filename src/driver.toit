@@ -1,10 +1,15 @@
-// Copyright (C) 2021 Toitware ApS. All rights reserved.
+// Copyright (C) 2026 Toit Contributors. All rights reserved.
+// Use of this source code is governed by a MIT-style license that can be found
+// in the LICENSE file.
 
 import io
 import serial.device show Device
 import serial.registers show Registers
 import math
 import log
+import monitor
+
+/** Toit driver for the ICM20948 9-axis motion sensing IC. */
 
 I2C-ADDRESS     ::= 0b1101000
 I2C-ADDRESS-ALT ::= 0b1101001
@@ -57,9 +62,9 @@ class Driver:
   static REGISTER-GYRO-ZOUT-H_    ::= 0x37
   static REGISTER-GYRO-ZOUT-L_    ::= 0x38
 
-  static REGISTER-EXT-SLV-DATA-00_ ::= 0x3b
-  static REGISTER-EXT-SLV-DATA-01_ ::= 0x3c
-  static REGISTER-EXT-SLV-DATA-02_ ::= 0x3d
+  static REGISTER-EXT-SLV-DATA-00_ ::= 0x3B
+  static REGISTER-EXT-SLV-DATA-01_ ::= 0x3C
+  static REGISTER-EXT-SLV-DATA-02_ ::= 0x3D
   static REGISTER-EXT-SLV-DATA-23_ ::= 0x52
 
   static REGISTER-FIFO-EN-1_       ::= 0x66
@@ -85,6 +90,13 @@ class Driver:
   static LP-CONFIG-I2C-ACCEL-CYCLE_  ::= 0b00100000
   static LP-CONFIG-I2C-GYRO-CYCLE_   ::= 0b00010000
 
+  // Masks: REGISTER-PWR-MGMT-1_
+  static PWR-MGMT-1-DEVICE-RESET_ ::= 0b10000000
+  static PWR-MGMT-1-SLEEP_        ::= 0b01000000
+  static PWR-MGMT-1-LOW-POWER_    ::= 0b00100000
+  static PWR-MGMT-1-TEMP-DIS_     ::= 0b00010000
+  static PWR-MGMT-1-CLKSEL_       ::= 0b00000111
+
   // Bank 2.
   static REGISTER-GYRO-SMPLRT-DIV_  ::= 0x0
   static REGISTER-GYRO-CONFIG-1_    ::= 0x1
@@ -106,8 +118,8 @@ class Driver:
   //   (writes or reads).  Result goes into $REGISTER-I2C-SLV4-DI_.
   //   Must wait for 'DONE' from $REGISTER-I2C-MST-STATUS_.
   static REGISTER-I2C-SLV0-ADDR_      ::= 0x03  // R/W [7] and PHY address [0..6] of I2C Slave x.
-  static REGISTER-I2C-SLV0-REG_       ::= 0x04  // I2C slave x register address from where to begin data transfer.
-  static REGISTER-I2C-SLV0-CTRL_      ::= 0x05  // Bitmask of properties for the read.
+  static REGISTER-I2C-SLV0-REG_       ::= 0x04  // I2C slave x register address from where to begin shadowing data to ICM20948.
+  static REGISTER-I2C-SLV0-CTRL_      ::= 0x05  // Bitmask of properties for the read, including data length to retreive.
   static REGISTER-I2C-SLV0-DO_        ::= 0x06  // Data out when slave x is set to write.
 
   static REGISTER-I2C-SLV1-ADDR_      ::= 0x07
@@ -198,63 +210,61 @@ class Driver:
   static WIDTH-16_ ::= 16
   static DEFAULT-REGISTER-WIDTH_ ::= WIDTH-8_
 
+  static COMMAND-TIMEOUT_ ::= Duration --ms=1500
+
   accel-sensitivity_/float := 0.0
   gyro-sensitivity_/float := 0.0
 
   reg_/Registers := ?
   logger_/log.Logger := ?
+  bank-mutex_ := monitor.Mutex
+  bank_/int := -1
 
   constructor dev/Device --logger/log.Logger=log.default:
     reg_ = dev.registers
     logger_ = logger.with-name "icm20948"
 
+    // Set current bank in sync with local variable.
+    set-bank-p_ 0
+
   on:
     tries := 5
-    set-bank_ 0
-    while (reg_.read-u8 REGISTER-WHO-AM-I_) != WHO-AM-I_:
+    while (read-register_ 0 REGISTER-WHO-AM-I_) != WHO-AM-I_:
       tries--
       if tries == 0: throw "INVALID_CHIP"
       sleep --ms=1
 
     reset_
+    logger_.debug "device switched on"
 
     // Enable ACCEL and GYRO.
-    set-bank_ 0
     // print ((reg_.read_u8 REGISTER_PWR_MGMT_1_).stringify 16)
-    reg_.write-u8 REGISTER-PWR-MGMT-1_ 0b00000001
-    reg_.write-u8 REGISTER-PWR-MGMT-2_ 0b00000000
+    write-register_ 0 REGISTER-PWR-MGMT-1_ 0b00000001
+    write-register_ 0 REGISTER-PWR-MGMT-2_ 0b00000000
+
 
   configure-accel --scale/int=ACCEL-SCALE-2G:
-    r := reg_.read-u8 REGISTER-LP-CONFIG_
-    reg_.write-u8 REGISTER-LP-CONFIG_ r & ~0b100000
+    set-accel-duty-cycle-mode_ true
 
     // Configure accel.
     cfg := 0b00111_00_1
     cfg |= scale << 1
-    set-bank_ 2
-    reg_.write-u8 REGISTER-ACCEL-CONFIG_ cfg
-    set-bank_ 0
+    write-register_ 2 REGISTER-ACCEL-CONFIG_ cfg
 
     accel-sensitivity_ = ACCEL-SENSITIVITY_[scale]
-
     sleep --ms=10
+    logger_.debug "accelerometer configured"
 
   configure-gyro --scale/int=GYRO-SCALE-250DPS:
-    r := reg_.read-u8 REGISTER-LP-CONFIG_
-    reg_.write-u8 REGISTER-LP-CONFIG_ r & ~0b10000
+    set-gyro-duty-cycle-mode_ true
 
-    set-bank_ 2
-
-    //reg_.write_u8 REGISTER_GYRO_SMPLRT_DIV_ 0
-
-    reg_.write-u8 REGISTER-GYRO-CONFIG-1_ 0b111_00_1 | scale << 1
-    //reg_.write_u8 REGISTER_GYRO_CONFIG_2_ 0b1111
-
-    set-bank_ 0
+    //write-register_ 2 REGISTER_GYRO_SMPLRT_DIV_ 0
+    write-register_ 2 REGISTER-GYRO-CONFIG-1_ (0b111_00_1 | scale << 1)
+    //write-register_ 2 REGISTER_GYRO_CONFIG_2_ 0b1111
 
     gyro-sensitivity_ = GYRO-SENSITIVITY_[scale]
-
     sleep --ms=10
+    logger_.debug "gyroscope configured"
 
   off:
 
@@ -269,30 +279,67 @@ class Driver:
       z / sensitivity
 
   read-accel -> math.Point3f:
-    while true:
-      rdy := reg_.read-u8 REGISTER-INT-STATUS-1_
-      if rdy == 1: break
-      sleep --ms=1
+    // Wait for ready, but with a timeout.
+    exception := catch:
+      with-timeout COMMAND-TIMEOUT_:
+          while ((read-register_ 0 REGISTER-INT-STATUS-1_) & 0x01) == 0:
+            sleep --ms=1
+
+    if exception:
+      logger_.error "read-accel timed out" --tags={"timeout-ms":COMMAND-TIMEOUT_.in-ms}
+      throw "read-accel timed out"
 
     return read-point_ REGISTER-ACCEL-XOUT-H_ accel-sensitivity_
 
   read-gyro -> math.Point3f:
-    while true:
-      rdy := reg_.read-u8 REGISTER-INT-STATUS-1_
-      if rdy == 1: break
-      sleep --ms=1
+    // Wait for ready, but with a timeout.
+    exception := catch:
+      with-timeout COMMAND-TIMEOUT_:
+          while ((read-register_ 0 REGISTER-INT-STATUS-1_) & 0x01) == 0:
+            sleep --ms=1
+
+    if exception:
+      logger_.error "read-gyro timed out" --tags={"timeout-ms":COMMAND-TIMEOUT_.in-ms}
+      throw "read-gyro timed out"
 
     return read-point_ REGISTER-GYRO-XOUT-H_ gyro-sensitivity_
 
   reset_:
-    set-bank_ 0
-    reg_.write-u8 REGISTER-PWR-MGMT-1_ 0b10000001
-    sleep --ms=5
-    set-bank_ 0
+    bank-mutex_.do:
+      set-bank-p_ 0
+      reg_.write-u8 REGISTER-PWR-MGMT-1_ PWR-MGMT-1-DEVICE-RESET_
+      bank_ = -1
+      sleep --ms=100
+      set-bank-p_ 0
+      if (reg_.read-u8 REGISTER-WHO-AM-I_) != WHO-AM-I_:
+        logger_.error "bus did not recover from reset after 100ms"
+        throw "Bus did not recover from reset after 100ms"
+    write-register_ 0 REGISTER-PWR-MGMT-1_ 1 --mask=PWR-MGMT-1-CLKSEL_
 
-  set-bank_ bank/int:
+  /**
+  Sets the current bank for register reads and writes.
+
+  Tracks current bank to compare and only send the bank set command
+    when necessary.  Significantly reduces traffic on the I2C bus.
+  */
+  set-bank-p_ bank/int:
+    assert: 0 <= bank <= 3
+    if bank_ == bank:
+      return
     reg_.write-u8 REGISTER-REG-BANK-SEL_ bank << 4
+    bank_ = bank
 
+  /** Sets duty-cycle mode for accelerometer. */
+  set-accel-duty-cycle-mode_ on/bool -> none:
+    value := 0
+    if on: value = 1
+    write-register_ 0 REGISTER-LP-CONFIG_ value --mask=LP-CONFIG-I2C-ACCEL-CYCLE_
+
+  /** Sets duty-cycle mode for gyroscope. */
+  set-gyro-duty-cycle-mode_ on/bool -> none:
+    value := 0
+    if on: value = 1
+    write-register_ 0 REGISTER-LP-CONFIG_ value --mask=LP-CONFIG-I2C-GYRO-CYCLE_
 
   /**
   Enables I2C bypass such that AK09916 appears and is reachable on external I2C bus.
@@ -306,41 +353,48 @@ class Driver:
     to AK09916 data over SPI.
   */
   enable-i2c-bypass -> none:
-    set-bank_ 0
     // Disable I2C Master:
-    write-register_ REGISTER-USER-CTRL_ 0 --mask=USER-CTRL-I2C-MST-EN_
+    write-register_ 0 REGISTER-USER-CTRL_ 0 --mask=USER-CTRL-I2C-MST-EN_
     // Enable bypass mux:
-    write-register_ REGISTER-INT-PIN-CFG_ 1 --mask=INT-PIN-CFG-BYPASS-EN_
+    write-register_ 0 REGISTER-INT-PIN-CFG_ 1 --mask=INT-PIN-CFG-BYPASS-EN_
+
+  /** Reverses $enable-i2c-bypass. */
+  disable-i2c-bypass -> none:
+    write-register_ 0 REGISTER-INT-PIN-CFG_ 0 --mask=INT-PIN-CFG-BYPASS-EN_
+    write-register_ 0 REGISTER-USER-CTRL_ 1 --mask=USER-CTRL-I2C-MST-EN_
 
   /**
   Reads and optionally masks/parses register data. (Big-endian.)
   */
   read-register_ -> int
+      bank/int
       register/int
       --mask/int?=null
       --offset/int?=null
       --width/int=DEFAULT-REGISTER-WIDTH_
       --signed/bool=false:
-    assert: (width == 8) or (width == 16)
+    assert: 0 <= bank <= 3
+    assert: (width == WIDTH-8_) or (width == WIDTH-16_)
 
     if not mask: mask = (width == 8) ? 0xFF : 0xFFFF
     if not offset: offset = mask.count-trailing-zeros
 
-    // Check mask fits register width:
     assert:
-      if width == 8: (mask & ~0xff) == 0
-      else: (mask & ~0xffff) == 0
+      if width == WIDTH-8_: (mask & ~0xFF) == 0
+      else: (mask & ~0xFFFF) == 0
     assert: mask != 0
 
-    full_width := (offset == 0) and ((width == 8 and mask == 0xFF) or (width == 16 and mask == 0xFFFF))
-    if signed and not full_width:
+    full-width := (offset == 0) and ((width == WIDTH-8_ and mask == 0xFF) or (width == WIDTH-16_ and mask == 0xFFFF))
+    if signed and not full-width:
       throw "masked signed read not supported (need sign-extension by field width)"
 
-    register-value/int := ?
-    if width == 8:
-      register-value = signed ? reg_.read-i8 register : reg_.read-u8 register
-    else:
-      register-value = signed ? reg_.read-i16-be register : reg_.read-u16-be register
+    register-value/int? := null
+    bank-mutex_.do:
+      set-bank-p_ bank
+      if width == WIDTH-8_:
+        register-value = signed ? reg_.read-i8 register : reg_.read-u8 register
+      else:
+        register-value = signed ? reg_.read-i16-be register : reg_.read-u16-be register
 
     if full-width:
       return register-value
@@ -351,24 +405,26 @@ class Driver:
   Writes register data - either masked or full register writes. (Big-endian.)
   */
   write-register_ -> none
+      bank/int
       register/int
       value/int
       --mask/int?=null
       --offset/int?=null
       --width/int=DEFAULT-REGISTER-WIDTH_
       --signed/bool=false:
-    assert: (width == 8) or (width == 16)
+    assert: 0 <= bank <= 3
+    assert: (width == WIDTH-8_) or (width == WIDTH-16_)
 
-    if not mask: mask = (width == 8) ? 0xFF : 0xFFFF
+    if not mask: mask = (width == WIDTH-8_) ? 0xFF : 0xFFFF
     if not offset: offset = mask.count-trailing-zeros
 
     // Check mask fits register width:
     assert:
-      if width == 8: (mask & ~0xff) == 0
-      else: (mask & ~0xffff) == 0
+      if width == WIDTH-8_: (mask & ~0xFF) == 0
+      else: (mask & ~0xFFFF) == 0
 
     // Determine if write is full width:
-    full-width := (offset == 0) and ((width == 8 and mask == 0xFF) or (width == 16 and mask == 0xFFFF))
+    full-width := (offset == 0) and ((width == WIDTH-8_ and mask == 0xFF) or (width == WIDTH-16_ and mask == 0xFFFF))
 
     // For now don't accept negative numbers as masked writes.
     if signed and not full-width:
@@ -385,21 +441,24 @@ class Driver:
       if width == 8: assert: -128 <= value and value <= 127
       else: assert: -32768 <= value and value <= 32767
 
-    // Full-width direct write:
-    if full-width:
-      if width == 8:
-        signed ? reg_.write-i8 register value : reg_.write-u8 register value
+    bank-mutex_.do:
+      set-bank-p_ bank
+
+      // Full-width direct write:
+      if full-width:
+        if width == WIDTH-8_:
+          signed ? reg_.write-i8 register value : reg_.write-u8 register value
+        else:
+          signed ? reg_.write-i16-be register value : reg_.write-u16-be register value
+        return
+
+      // Read Reg for modification:
+      old-value/int := (width == WIDTH-8_) ? reg_.read-u8 register : reg_.read-u16-be register
+      reg-mask/int := (width == WIDTH-8_) ? 0xFF : 0xFFFF
+      new-value/int := (old-value & ~mask) | ((value & field-mask) << offset) & reg-mask
+
+      // Write modified value:
+      if width == WIDTH-8_:
+        reg_.write-u8 register new-value
       else:
-        signed ? reg_.write-i16-be register value : reg_.write-u16-be register value
-      return
-
-    // Read Reg for modification:
-    old-value/int := (width == 8) ? reg_.read-u8 register : reg_.read-u16-be register
-    reg-mask/int := (width == 8) ? 0xFF : 0xFFFF
-    new-value/int := (old-value & ~mask) | ((value & field-mask) << offset) & reg-mask
-
-    // Write modified value:
-    if width == 8:
-      reg_.write-u8 register new-value
-    else:
-      reg_.write-u16-be register new-value
+        reg_.write-u16-be register new-value

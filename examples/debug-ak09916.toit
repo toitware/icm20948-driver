@@ -7,7 +7,8 @@ Uses I2C bypass mode to allow access to the AK09916 directly on the host
   I2C bus.  It requires the additional ak09916 driver package.
 
 This is for testing purposes only.  The bypass configuration will remain until
-  disabled, or until the next power on/reset.
+  either manually disabled (using `.disable-i2c-bypass`), or until the next
+  power on/reset.
 */
 
 import gpio
@@ -24,11 +25,11 @@ main:
       --frequency=400_000
 
   bus-device-count := bus.scan.size
-  if not bus.test icm20948.Driver.AK09916-I2C-ADDRESS:
+  if not bus.test icm20948.I2C-ADDRESS-ALT:
     print "ICM20948 not found."
     return
 
-  print "Bus scan has $bus-device-count devices"
+  print " Bus scan has $bus-device-count devices"
   device := bus.device icm20948.I2C-ADDRESS-ALT
   sensor := icm20948.Driver device
   sensor.on
@@ -36,23 +37,22 @@ main:
   // Enable bypass:
   sensor.enable-i2c-bypass
   if not bus.test Ak0991x.I2C-ADDRESS:
-    print "bus missing the device. stopping..."
+    print " bus missing the device. stopping..."
     return
 
   new-bus-scan := bus.scan
-  print "After bypass, bus scan has $new-bus-scan.size devices"
+  print " After bypass, bus scan has $new-bus-scan.size devices"
 
   ak-device := bus.device Ak0991x.I2C-ADDRESS
   ak-sensor := Ak0991x ak-device
 
-  print "Bus contains AK09916."
-  print "Hardware ID: 0x$(%02x ak-sensor.get-hardware-id)"
+  print " Bus contains AK09916 hardware ID: 0x$(%02x ak-sensor.get-hardware-id)"
   ak-sensor.set-operating-mode Ak0991x.OPMODE-CONT-MODE1-10HZ
   sleep --ms=250
-  print "Data Ready: $ak-sensor.is-data-ready"
-  print "Magnetic Field: $ak-sensor.read-magnetic-field"
-  print "Magnetic Bearing: $ak-sensor.read-bearing"
+  print " Data Ready: $ak-sensor.is-data-ready"
+  print " Magnetic Field: $ak-sensor.read-magnetic-field"
+  print " Magnetic Bearing: $ak-sensor.read-bearing"
   print
-  100.repeat:
+  50.repeat:
     print " bearing $(%0.3f ak-sensor.read-bearing)"
     sleep --ms=100

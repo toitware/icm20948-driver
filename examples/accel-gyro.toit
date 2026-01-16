@@ -1,6 +1,6 @@
-// Copyright (C) 2021 Toitware ApS. All rights reserved.
-// Use of this source code is governed by an MIT-style license that can be found
-// in the LICENSE file.
+// Copyright (C) 2026 Toit Contributors.
+// Use of this source code is governed by a Zero-Clause BSD license that can
+// be found in the EXAMPLES_LICENSE file.
 
 /**
 A simple example of how to use the ICM20948 driver.
@@ -12,8 +12,8 @@ import icm20948
 
 main:
   bus := i2c.Bus
-    --sda=gpio.Pin 21
-    --scl=gpio.Pin 22
+    --sda=gpio.Pin 19
+    --scl=gpio.Pin 20
 
   device := bus.device icm20948.I2C-ADDRESS-ALT
 
@@ -22,8 +22,8 @@ main:
   sensor.on
   sensor.configure-accel
   sensor.configure-gyro
-  while true:
-    print "Acceleration: $sensor.read-accel"
-    print "Gyroscope: $sensor.read-gyro"
+  50.repeat:
+    print " Acceleration: $sensor.read-accel"
+    print " Gyroscope:    $sensor.read-gyro"
     sleep --ms=1000
   sensor.off
