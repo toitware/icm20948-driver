@@ -86,6 +86,13 @@ class Driver:
   static LP-CONFIG-I2C-ACCEL-CYCLE_  ::= 0b00100000
   static LP-CONFIG-I2C-GYRO-CYCLE_   ::= 0b00010000
 
+  // Masks: REGISTER-PWR-MGMT-1_
+  static PWR-MGMT-1-DEVICE-RESET_ ::= 0b10000000
+  static PWR-MGMT-1-SLEEP_        ::= 0b01000000
+  static PWR-MGMT-1-LOW-POWER_    ::= 0b00100000
+  static PWR-MGMT-1-TEMP-DIS_     ::= 0b00010000
+  static PWR-MGMT-1-CLKSEL_       ::= 0b00000111
+
   // Bank 2.
   static REGISTER-GYRO-SMPLRT-DIV_  ::= 0x0
   static REGISTER-GYRO-CONFIG-1_    ::= 0x1
@@ -305,18 +312,15 @@ class Driver:
   /**
   Sets the current bank for register reads and writes.
 
-  Tracks current bank in $bank_ and sets only when necessary, in order to
-    reduce traffic on the I2C bus.
+  Tracks current bank in $bank_ to compare and only send the bank set command
+    when necessary.  Significantly reduces traffic on the I2C bus.
   */
   set-bank-p_ bank/int:
     assert: 0 <= bank <= 3
     if bank_ == bank:
-      //logger_.debug "bank already set" --tags={"bank":bank}
       return
     reg_.write-u8 REGISTER-REG-BANK-SEL_ bank << 4
-    //logger_.debug "set bank" --tags={"bank":bank}
     bank_ = bank
-
 
   /**
   Enables I2C bypass such that AK09916 appears and is reachable on external I2C bus.
@@ -330,11 +334,10 @@ class Driver:
     to AK09916 data over SPI.
   */
   enable-i2c-bypass -> none:
-    set-bank_ 0
     // Disable I2C Master:
-    write-register_ REGISTER-USER-CTRL_ 0 --mask=USER-CTRL-I2C-MST-EN_
+    write-register_ 0 REGISTER-USER-CTRL_ 0 --mask=USER-CTRL-I2C-MST-EN_
     // Enable bypass mux:
-    write-register_ REGISTER-INT-PIN-CFG_ 1 --mask=INT-PIN-CFG-BYPASS-EN_
+    write-register_ 0 REGISTER-INT-PIN-CFG_ 1 --mask=INT-PIN-CFG-BYPASS-EN_
 
   /**
   Reads and optionally masks/parses register data. (Big-endian.)
