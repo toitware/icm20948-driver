@@ -205,11 +205,14 @@ class Driver:
   reg_/Registers := ?
   logger_/log.Logger := ?
   bank-mutex_ := monitor.Mutex
-  bank_/int := ?
+  bank_/int := -1
 
   constructor dev/Device --logger/log.Logger=log.default:
     reg_ = dev.registers
     logger_ = logger.with-name "icm20948"
+
+    // Set current bank in sync with local var
+    set-bank-p_ 0
 
   on:
     tries := 5
