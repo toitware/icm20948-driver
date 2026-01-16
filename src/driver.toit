@@ -287,12 +287,18 @@ class Driver:
     return read-point_ REGISTER-GYRO-XOUT-H_ gyro-sensitivity_
 
   reset_:
-    set-bank_ 0
-    reg_.write-u8 REGISTER-PWR-MGMT-1_ 0b10000001
-    sleep --ms=5
-    set-bank_ 0
+    bank-mutex_.do:
+      set-bank-p_ 0
+      reg_.write-u8 REGISTER-PWR-MGMT-1_ PWR-MGMT-1-DEVICE-RESET_
+      bank_ = -1
+      sleep --ms=100
+      set-bank-p_ 0
+      if (reg_.read-u8 REGISTER-WHO-AM-I_) != WHO-AM-I_:
+        logger_.error "bus did not recover from reset after 100ms"
+        throw "Bus did not recover from reset after 100ms"
+    write-register_ 0 REGISTER-PWR-MGMT-1_ 1 --mask=PWR-MGMT-1-CLKSEL_
 
-  set-bank_ bank/int:
+  set-bank-p_ bank/int:
     reg_.write-u8 REGISTER-REG-BANK-SEL_ bank << 4
 
 
