@@ -223,19 +223,19 @@ class Driver:
 
   on:
     tries := 5
-    set-bank_ 0
-    while (reg_.read-u8 REGISTER-WHO-AM-I_) != WHO-AM-I_:
+    while (read-register_ 0 REGISTER-WHO-AM-I_) != WHO-AM-I_:
       tries--
       if tries == 0: throw "INVALID_CHIP"
       sleep --ms=1
 
     reset_
+    logger_.debug "device switched on"
 
     // Enable ACCEL and GYRO.
-    set-bank_ 0
     // print ((reg_.read_u8 REGISTER_PWR_MGMT_1_).stringify 16)
-    reg_.write-u8 REGISTER-PWR-MGMT-1_ 0b00000001
-    reg_.write-u8 REGISTER-PWR-MGMT-2_ 0b00000000
+    write-register_ 0 REGISTER-PWR-MGMT-1_ 0b00000001
+    write-register_ 0 REGISTER-PWR-MGMT-2_ 0b00000000
+
 
   configure-accel --scale/int=ACCEL-SCALE-2G:
     r := reg_.read-u8 REGISTER-LP-CONFIG_
