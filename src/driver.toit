@@ -5,6 +5,7 @@ import serial.device show Device
 import serial.registers show Registers
 import math
 import log
+import monitor
 
 I2C-ADDRESS     ::= 0b1101000
 I2C-ADDRESS-ALT ::= 0b1101001
@@ -203,6 +204,7 @@ class Driver:
 
   reg_/Registers := ?
   logger_/log.Logger := ?
+  bank-mutex_ := monitor.Mutex
 
   constructor dev/Device --logger/log.Logger=log.default:
     reg_ = dev.registers
