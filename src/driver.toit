@@ -118,8 +118,8 @@ class Driver:
   //   (writes or reads).  Result goes into $REGISTER-I2C-SLV4-DI_.
   //   Must wait for 'DONE' from $REGISTER-I2C-MST-STATUS_.
   static REGISTER-I2C-SLV0-ADDR_      ::= 0x03  // R/W [7] and PHY address [0..6] of I2C Slave x.
-  static REGISTER-I2C-SLV0-REG_       ::= 0x04  // I2C slave x register address from where to begin data transfer.
-  static REGISTER-I2C-SLV0-CTRL_      ::= 0x05  // Bitmask of properties for the read.
+  static REGISTER-I2C-SLV0-REG_       ::= 0x04  // I2C slave x register address from where to begin shadowing data to ICM20948.
+  static REGISTER-I2C-SLV0-CTRL_      ::= 0x05  // Bitmask of properties for the read, including data length to retreive.
   static REGISTER-I2C-SLV0-DO_        ::= 0x06  // Data out when slave x is set to write.
 
   static REGISTER-I2C-SLV1-ADDR_      ::= 0x07
