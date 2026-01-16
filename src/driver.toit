@@ -260,7 +260,6 @@ class Driver:
     sleep --ms=10
     logger_.debug "gyroscope configured"
 
-
   off:
 
   read-point_ reg/int sensitivity/float -> math.Point3f:
