@@ -9,6 +9,8 @@ import math
 import log
 import monitor
 
+/** Toit driver for the ICM20948 9-axis motion sensing IC. */
+
 I2C-ADDRESS     ::= 0b1101000
 I2C-ADDRESS-ALT ::= 0b1101001
 
@@ -222,7 +224,7 @@ class Driver:
     reg_ = dev.registers
     logger_ = logger.with-name "icm20948"
 
-    // Set current bank in sync with local var
+    // Set current bank in sync with local variable.
     set-bank-p_ 0
 
   on:
@@ -317,7 +319,7 @@ class Driver:
   /**
   Sets the current bank for register reads and writes.
 
-  Tracks current bank in $bank_ to compare and only send the bank set command
+  Tracks current bank to compare and only send the bank set command
     when necessary.  Significantly reduces traffic on the I2C bus.
   */
   set-bank-p_ bank/int:
