@@ -23,7 +23,7 @@ main:
   sensor.configure-accel
   sensor.configure-gyro
   50.repeat:
-    print "Acceleration: $sensor.read-accel"
-    print "Gyroscope: $sensor.read-gyro"
+    print " Acceleration: $sensor.read-accel"
+    print " Gyroscope:    $sensor.read-gyro"
     sleep --ms=1000
   sensor.off
