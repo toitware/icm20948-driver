@@ -205,6 +205,7 @@ class Driver:
   reg_/Registers := ?
   logger_/log.Logger := ?
   bank-mutex_ := monitor.Mutex
+  bank_/int := ?
 
   constructor dev/Device --logger/log.Logger=log.default:
     reg_ = dev.registers
@@ -298,8 +299,20 @@ class Driver:
         throw "Bus did not recover from reset after 100ms"
     write-register_ 0 REGISTER-PWR-MGMT-1_ 1 --mask=PWR-MGMT-1-CLKSEL_
 
+  /**
+  Sets the current bank for register reads and writes.
+
+  Tracks current bank in $bank_ and sets only when necessary, in order to
+    reduce traffic on the I2C bus.
+  */
   set-bank-p_ bank/int:
+    assert: 0 <= bank <= 3
+    if bank_ == bank:
+      //logger_.debug "bank already set" --tags={"bank":bank}
+      return
     reg_.write-u8 REGISTER-REG-BANK-SEL_ bank << 4
+    //logger_.debug "set bank" --tags={"bank":bank}
+    bank_ = bank
 
 
   /**
