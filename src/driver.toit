@@ -206,6 +206,8 @@ class Driver:
   static WIDTH-16_ ::= 16
   static DEFAULT-REGISTER-WIDTH_ ::= WIDTH-8_
 
+  static COMMAND-TIMEOUT_ ::= Duration --ms=1500
+
   accel-sensitivity_/float := 0.0
   gyro-sensitivity_/float := 0.0
 
@@ -273,10 +275,15 @@ class Driver:
       z / sensitivity
 
   read-accel -> math.Point3f:
-    while true:
-      rdy := reg_.read-u8 REGISTER-INT-STATUS-1_
-      if rdy == 1: break
-      sleep --ms=1
+    // Wait for ready, but with a timeout.
+    exception := catch:
+      with-timeout COMMAND-TIMEOUT_:
+          while ((read-register_ 0 REGISTER-INT-STATUS-1_) & 0x01) == 0:
+            sleep --ms=1
+
+    if exception:
+      logger_.error "read-accel timed out" --tags={"timeout-ms":COMMAND-TIMEOUT_.in-ms}
+      throw "read-accel timed out"
 
     return read-point_ REGISTER-ACCEL-XOUT-H_ accel-sensitivity_
 
