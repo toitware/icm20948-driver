@@ -24,7 +24,7 @@ main:
       --frequency=400_000
 
   bus-device-count := bus.scan.size
-  if not bus.test icm20948.Driver.AK09916-I2C-ADDRESS:
+  if not bus.test icm20948.I2C-ADDRESS-ALT:
     print "ICM20948 not found."
     return
 
@@ -53,6 +53,6 @@ main:
   print "Magnetic Field: $ak-sensor.read-magnetic-field"
   print "Magnetic Bearing: $ak-sensor.read-bearing"
   print
-  100.repeat:
+  50.repeat:
     print " bearing $(%0.3f ak-sensor.read-bearing)"
     sleep --ms=100

@@ -356,6 +356,9 @@ class Driver:
     // Enable bypass mux:
     write-register_ 0 REGISTER-INT-PIN-CFG_ 1 --mask=INT-PIN-CFG-BYPASS-EN_
 
+
+
+
   /**
   Reads and optionally masks/parses register data. (Big-endian.)
   */
