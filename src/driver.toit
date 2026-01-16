@@ -1,4 +1,6 @@
-// Copyright (C) 2021 Toitware ApS. All rights reserved.
+// Copyright (C) 2026 Toit Contributors. All rights reserved.
+// Use of this source code is governed by a MIT-style license that can be found
+// in the LICENSE file.
 
 import io
 import serial.device show Device
