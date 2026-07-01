@@ -10,7 +10,6 @@ This is for testing purposes only.  The bypass configuration will remain until
   disabled, or until the next power on/reset.
 */
 
-import gpio
 import i2c
 import icm20948
 import ak0991x show *
@@ -19,8 +18,8 @@ main:
   print
 
   bus := i2c.Bus
-      --sda=gpio.Pin 19
-      --scl=gpio.Pin 20
+      --sda=19
+      --scl=20
       --frequency=400_000
 
   bus-device-count := bus.scan.size

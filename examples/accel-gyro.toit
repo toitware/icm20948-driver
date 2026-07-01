@@ -6,14 +6,13 @@
 A simple example of how to use the ICM20948 driver.
 */
 
-import gpio
 import i2c
 import icm20948
 
 main:
   bus := i2c.Bus
-    --sda=gpio.Pin 21
-    --scl=gpio.Pin 22
+    --sda=21
+    --scl=22
 
   device := bus.device icm20948.I2C-ADDRESS-ALT
 
